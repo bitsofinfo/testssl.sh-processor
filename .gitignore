@@ -1,4 +1,5 @@
 *db.json
+*.json
 *.yaml
 *.yml
 *report.md
@@ -9,10 +10,13 @@
 *.log
 
 *_input.*
+
 *_cmds.*
 
 *output
 *output/
+
+input/
 
 testssl_cmds
 

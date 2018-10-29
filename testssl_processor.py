@@ -7,6 +7,7 @@ from multiprocessing import Pool, Process
 import random
 import json
 import pprint
+import yaml
 import re
 import os
 import argparse
@@ -25,7 +26,13 @@ from urllib.parse import urlparse
 from prometheus_client.core import GaugeMetricFamily, CounterMetricFamily, REGISTRY
 import concurrent.futures
 
-def mkdirs(cmd_parts):
+# Given an array of testssl.sh command parts
+# and a target root output_dir, this will will
+# do its best to detect filesystem path arguments
+# and make sure those directories exist as when
+# testssl.sh executes it expects all --*file output
+# arguments to reference pre-existing paths
+def mkdirs(cmd_parts, outputdir_root):
     # analyze each cmd part
     for part in cmd_parts:
 
@@ -59,9 +66,17 @@ def mkdirs(cmd_parts):
                         raise e
 
 
+# Takes a map/dict of arguments and executes the given testssl.sh command
+#
+#  - testssl_cmd = the actual testssl.sh command to execute
+#  - a unique timestamp for when the source command file event was received
+#  - system PATH to where the testssl.sh command lives if not present on the cmd itself
+#
+#  - Returns an dict of result object information for the command executed
 def execTestsslCmd(args):
     testssl_cmd = args['testssl_cmd']
     timestamp = args['timestamp']
+    my_working_dir = args['my_working_dir']
     testssl_path_if_missing = args['testssl_path_if_missing']
 
     cmd_result = { "success":False,
@@ -72,23 +87,10 @@ def execTestsslCmd(args):
     logging.info("Processing testssl_cmd: '%s'", testssl_cmd)
 
     try:
-        # my working dir
-        my_working_dir = os.path.dirname(os.path.realpath(__file__))
-
         # Where our output dir is
         # for path arguments in the command
         # that are relative and not absolute
-        outputdir_root = None
-        if 'outputdir_root' in args:
-            outputdir_root = args['outputdir_root']
-
-        # if outputdir_root is None
-        # set it = working dir
-        if outputdir_root is None:
-            outputdir_root = my_working_dir
-
-        # append ts subdir to outputdir_root
-        outputdir_root += "/testssl_processor_output_" + timestamp
+        outputdir_root = args['outputdir_root']
 
         # testssl.sh missing path?
         # prepend it with testssl_path_if_missing
@@ -107,7 +109,7 @@ def execTestsslCmd(args):
         # make any required dirs
         # contained in paths embedded in the command
         # as testssl.sh does not make them if missing
-        mkdirs(cmd_parts)
+        mkdirs(cmd_parts,outputdir_root)
 
         # execute the command
         start = datetime.datetime.now()
@@ -122,8 +124,8 @@ def execTestsslCmd(args):
             " cmd: " + testssl_cmd)
 
         cmd_result["returncode"] = run_result.returncode
-        cmd_result["stdout"] = run_result.stdout
-        cmd_result["stderr"] = run_result.stderr
+        cmd_result["stdout"] = run_result.stdout.decode('utf-8')
+        cmd_result["stderr"] = run_result.stderr.decode('utf-8')
 
         if run_result.stderr is not None and len(run_result.stderr) > 0:
             cmd_result["success"] = False
@@ -131,6 +133,7 @@ def execTestsslCmd(args):
             cmd_result["success"] = True
 
     except Exception as e:
+        logger.error(str(sys.exc_info()[:2]),e)
         cmd_result["success"] = False
         cmd_result["exception"] = str(sys.exc_info()[:2])
 
@@ -150,6 +153,15 @@ class TestsslProcessor(object):
     # for controlling access to job_name_2_metrics_db
     lock = threading.RLock()
 
+    # total threads = total amount of commands
+    # per file that can be processed concurrently
+    threads = 1
+
+    # result format/filename prefix
+    output_dir = "./testssl_processor_output"
+    result_filename_prefix = 'testssl_processor_result'
+    result_format = 'json'
+
     # this is invoked by prometheus_client.core
     # on some sort of schedule or by request to get
     # latest metrics
@@ -159,7 +171,7 @@ class TestsslProcessor(object):
 
     # Will process the testssl_cmds file
     def processCmdsFile(self,testssl_cmds_file_path):
-        print("CALLED " + testssl_cmds_file_path)
+
         # open the file
         testssl_cmds = []
         try:
@@ -167,39 +179,61 @@ class TestsslProcessor(object):
                 testssl_cmds = f.readlines()
                 testssl_cmds = [x.strip() for x in testssl_cmds]
         except:
-            print("Unexpected error:", sys.exc_info()[0])
-
-        logging.info("Processing testssl_cmds: '%s'", testssl_cmds_file_path)
-
-        threads = 8
-        exec_pool = None
-
-        # mthreaded...
-        if (isinstance(threads,str)):
-            threads = int(threads)
-
-        # init pool
-        exec_pool = Pool(threads)
-
-        # timestamp for this event
-        timestamp = datetime.datetime.utcnow().strftime('%Y%m%d_%H%M%S')
-
-        # process each command
-        execTestsslCmd_args = []
-        for cmd in testssl_cmds:
-            execTestsslCmd_args.append({'outputdir_root':'testssl-output',
-                                        'testssl_path_if_missing':'/Users/inter0p/Documents/omg/code/github.com/drwetter/testssl.sh',
-                                        'testssl_cmd':cmd,
-                                        'timestamp':timestamp})
-
+            logging.error("Unexpected error in open(testssl_cmds_file_path):", sys.exc_info()[0])
 
         try:
-            testssl_cmds_results = exec_pool.map(execTestsslCmd,execTestsslCmd_args)
-            for result in testssl_cmds_results:
-                pprint.pprint(result)
-        except:
-            print("Unexpected error:", sys.exc_info()[0])
+            logging.info("Processing testssl_cmds: '%s'", testssl_cmds_file_path)
 
+            exec_pool = None
+
+            # init pool
+            exec_pool = Pool(self.threads)
+
+            # timestamp for this event
+            timestamp = datetime.datetime.utcnow().strftime('%Y%m%d_%H%M%S')
+
+            # my working dir
+            my_working_dir = os.path.dirname(os.path.realpath(__file__));
+
+            # append ts subdir to outputdir_root
+            outputdir_root = self.output_dir + "/testssl_processor_output_" + timestamp
+
+            # process each command
+            execTestsslCmd_args = []
+            for cmd in testssl_cmds:
+                execTestsslCmd_args.append({'outputdir_root':outputdir_root,
+                                            'testssl_path_if_missing':'/Users/inter0p/Documents/omg/code/github.com/drwetter/testssl.sh',
+                                            'testssl_cmd':cmd,
+                                            'my_working_dir':my_working_dir,
+                                            'timestamp':timestamp})
+
+
+            try:
+                testssl_cmds_results = exec_pool.map(execTestsslCmd,execTestsslCmd_args)
+
+                # log the processor execution results
+                output_filename = outputdir_root + "/" + self.result_filename_prefix + "_" + timestamp
+                print(self.result_format)
+                if self.result_format == 'yaml':
+                    output_filename += ".yaml"
+                else:
+                    output_filename += ".json"
+
+                # to json
+                if output_filename is not None:
+                    with open(output_filename, 'w') as outfile:
+                        if self.result_format == 'json':
+                            json.dump(testssl_cmds_results, outfile, indent=4)
+                        else:
+                            yaml.dump(testssl_cmds_results, outfile, default_flow_style=False)
+
+                        logging.debug("Event %s Testssl processor result written to: %s",timestamp,output_filename)
+
+            except Exception as e:
+                logging.error("Unexpected error in exec_pool.map -> execTestsslCmd():", sys.exc_info()[0])
+
+        except Exception as e:
+            logging.error("Unexpected error:", sys.exc_info()[0])
 
 
 
@@ -214,6 +248,9 @@ class TestsslInputFileMonitor(FileSystemEventHandler):
     # our Pool
     executor = None
 
+    # Filter to match relevent paths in events received
+    filename_filter = 'testssl_cmds'
+
     def set_threads(self, t):
         self.threads = t
 
@@ -226,7 +263,7 @@ class TestsslInputFileMonitor(FileSystemEventHandler):
         if event.is_directory:
             return
 
-        if 'testssl_cmds' in event.src_path:
+        if self.filename_filter in event.src_path:
 
             logging.info("Responding to creation of %s: %s", "file", event.src_path)
 
@@ -237,30 +274,41 @@ class TestsslInputFileMonitor(FileSystemEventHandler):
 
 
 
-def init_watching(input_dir,listen_port,listen_addr,threads):
+def init_watching(input_dir,
+                 output_dir,
+                 filename_filter,
+                 watchdog_threads,
+                 testssl_threads,
+                 result_filename_prefix,
+                 result_format):
 
     # mthreaded...
-    if (isinstance(threads,str)):
-        threads = int(threads)
+    if (isinstance(watchdog_threads,str)):
+        watchdog_threads = int(watchdog_threads)
 
     # create watchdog to look for new files
     event_handler = TestsslInputFileMonitor()
-    event_handler.set_threads(threads)
+    event_handler.filename_filter = filename_filter
+    event_handler.set_threads(watchdog_threads)
 
     # Create a TestsslProcessor to consume the testssl_cmds files
     event_handler.testssl_processor = TestsslProcessor()
+    event_handler.testssl_processor.output_dir = output_dir
+    event_handler.testssl_processor.result_filename_prefix = result_filename_prefix
+    event_handler.testssl_processor.result_format = result_format
+
+    # give the processor the total number of threads to use
+    # for processing testssl.sh cmds concurrently
+    if (isinstance(testssl_threads,str)):
+        testssl_threads = int(testssl_threads)
+    event_handler.testssl_processor.threads = testssl_threads
 
     # schedule our file watchdog
     observer = Observer()
     observer.schedule(event_handler, input_dir, recursive=True)
     observer.start()
 
-    #REGISTRY.register(event_handler.testssl_processor)
-
-    # Start up the server to expose the metrics.
-    #start_http_server(int(listen_port),addr=listen_addr)
-
-    logging.info("Exposing testssl metrics for Prometheus at: http://%s:%s/metrics",listen_addr,str(listen_port))
+    logging.info("Monitoring for new testssl_cmds files at: %s with filename filter: %s",input_dir,filename_filter)
 
     try:
         while True:
@@ -277,13 +325,15 @@ def init_watching(input_dir,listen_port,listen_addr,threads):
 ##########################
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('-i', '--input-dir', dest='input_dir', default="./output", help="Directory path to recursively monitor for new '*servicecheckerdb*' json output files")
-    parser.add_argument('-p', '--listen-port', dest='listen_port', default=8000, help="HTTP port to expose /metrics at")
-    parser.add_argument('-a', '--listen-addr', dest='listen_addr', default='127.0.0.1', help="Address to expost metrics http server on")
+    parser.add_argument('-i', '--input-dir', dest='input_dir', default="./input", help="Directory path to recursively monitor for new '*servicecheckerdb*' json output files")
+    parser.add_argument('-O', '--output-dir', dest='output_dir', default="./testssl_processor_output", help="Directory path to place all processor output, and testssl.sh output files to if relative paths are in command files. If absoluate paths are in testssl.sh command files they will be respected and only processor putput will go into --output-dir")
+    parser.add_argument('-f', '--filename-filter', dest='filename_filter', default="testssl_cmds", help="Only react to filenames in --input-dir that contain the string --filename-filter, default 'testssl_cmds'")
+    parser.add_argument('-o', '--result-filename-prefix', dest='result_filename_prefix', default="testssl_processor_result", help="processor execution result filename prefix")
+    parser.add_argument('-q', '--result-format', dest='result_format', default="json", help="processor result filename format, json or yaml")
     parser.add_argument('-l', '--log-file', dest='log_file', default=None, help="Path to log file, default None, STDOUT")
     parser.add_argument('-x', '--log-level', dest='log_level', default="DEBUG", help="log level, default DEBUG ")
-    parser.add_argument('-d', '--threads', dest='threads', default=1, help="max threads for watchdog file processing")
-
+    parser.add_argument('-w', '--watchdog-threads', dest='watchdog_threads', default=1, help="max threads for watchdog file processing, default 1")
+    parser.add_argument('-t', '--testssl-threads', dest='testssl_threads', default=10, help="for each watchdog file event, the maximum number of commands to be processed concurrently by testssl.sh invocations, default 10")
 
     args = parser.parse_args()
 
@@ -293,4 +343,10 @@ if __name__ == '__main__':
     logging.Formatter.converter = time.gmtime
 
 
-    init_watching(args.input_dir,args.listen_port,args.listen_addr,args.threads)
+    init_watching(args.input_dir,
+                  args.output_dir,
+                  args.filename_filter,
+                  args.watchdog_threads,
+                  args.testssl_threads,
+                  args.result_filename_prefix,
+                  args.result_format)
