@@ -5,6 +5,8 @@
 *report.md
 *servicecheckerdb.yml
 
+testssl.sh/
+
 *.ds_store
 
 *.log

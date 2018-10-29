@@ -94,9 +94,14 @@ def execTestsslCmd(args):
 
         # testssl.sh missing path?
         # prepend it with testssl_path_if_missing
-        if testssl_cmd.startswith('testssl.sh'):
-            if not os.path.exists(my_working_dir+"/testssl.sh"):
-                testssl_cmd = testssl_path_if_missing + "/" + testssl_cmd
+        if testssl_cmd.startswith('testssl.sh') or testssl_cmd.startswith('./testssl.sh'):
+            # my_dir
+            my_dir = os.path.realpath(__file__)
+            my_dir,file = os.path.split(my_dir)
+            if not os.path.exists(my_dir+"/testssl.sh") or not os.path.isfile(my_dir+"/testssl.sh"):
+                if testssl_path_if_missing.startswith('./'):
+                    testssl_path_if_missing = my_dir + "/" + testssl_path_if_missing.replace("./","")
+                    testssl_cmd = testssl_path_if_missing + "/" + testssl_cmd.replace("./","")
 
         # capture the actual cmd we are now executing
         # and note the current working dir
@@ -133,7 +138,7 @@ def execTestsslCmd(args):
             cmd_result["success"] = True
 
     except Exception as e:
-        logger.error(str(sys.exc_info()[:2]),e)
+        logging.error(str(sys.exc_info()[:2]),e)
         cmd_result["success"] = False
         cmd_result["exception"] = str(sys.exc_info()[:2])
 
@@ -158,6 +163,7 @@ class TestsslProcessor(object):
     threads = 1
 
     # result format/filename prefix
+    testssl_path_if_missing = None
     output_dir = "./testssl_processor_output"
     result_filename_prefix = 'testssl_processor_result'
     result_format = 'json'
@@ -198,11 +204,14 @@ class TestsslProcessor(object):
             # append ts subdir to outputdir_root
             outputdir_root = self.output_dir + "/testssl_processor_output_" + timestamp
 
+            # ensure exists
+            os.makedirs(outputdir_root)
+
             # process each command
             execTestsslCmd_args = []
             for cmd in testssl_cmds:
                 execTestsslCmd_args.append({'outputdir_root':outputdir_root,
-                                            'testssl_path_if_missing':'/Users/inter0p/Documents/omg/code/github.com/drwetter/testssl.sh',
+                                            'testssl_path_if_missing':self.testssl_path_if_missing,
                                             'testssl_cmd':cmd,
                                             'my_working_dir':my_working_dir,
                                             'timestamp':timestamp})
@@ -280,7 +289,8 @@ def init_watching(input_dir,
                  watchdog_threads,
                  testssl_threads,
                  result_filename_prefix,
-                 result_format):
+                 result_format,
+                 testssl_path_if_missing):
 
     # mthreaded...
     if (isinstance(watchdog_threads,str)):
@@ -293,6 +303,7 @@ def init_watching(input_dir,
 
     # Create a TestsslProcessor to consume the testssl_cmds files
     event_handler.testssl_processor = TestsslProcessor()
+    event_handler.testssl_processor.testssl_path_if_missing = testssl_path_if_missing
     event_handler.testssl_processor.output_dir = output_dir
     event_handler.testssl_processor.result_filename_prefix = result_filename_prefix
     event_handler.testssl_processor.result_format = result_format
@@ -325,8 +336,9 @@ def init_watching(input_dir,
 ##########################
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('-i', '--input-dir', dest='input_dir', default="./input", help="Directory path to recursively monitor for new '*servicecheckerdb*' json output files")
+    parser.add_argument('-i', '--input-dir', dest='input_dir', default="./input", help="Directory path to recursively monitor for new `--filename-filter` testssl.sh command files")
     parser.add_argument('-O', '--output-dir', dest='output_dir', default="./testssl_processor_output", help="Directory path to place all processor output, and testssl.sh output files to if relative paths are in command files. If absoluate paths are in testssl.sh command files they will be respected and only processor putput will go into --output-dir")
+    parser.add_argument('-m', '--testssl-path-if-missing', dest='testssl_path_if_missing', default=None, help="If the testssl.sh commands in the command files do not reference an absolute path to the testssl.sh command, it assumes its already on the PATH or in the current working directory of the processor. Otherwise you can specify the PATH to it with this argument")
     parser.add_argument('-f', '--filename-filter', dest='filename_filter', default="testssl_cmds", help="Only react to filenames in --input-dir that contain the string --filename-filter, default 'testssl_cmds'")
     parser.add_argument('-o', '--result-filename-prefix', dest='result_filename_prefix', default="testssl_processor_result", help="processor execution result filename prefix")
     parser.add_argument('-q', '--result-format', dest='result_format', default="json", help="processor result filename format, json or yaml")
@@ -349,4 +361,5 @@ if __name__ == '__main__':
                   args.watchdog_threads,
                   args.testssl_threads,
                   args.result_filename_prefix,
-                  args.result_format)
+                  args.result_format,
+                  args.testssl_path_if_missing)
