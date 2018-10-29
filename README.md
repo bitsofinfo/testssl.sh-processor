@@ -7,7 +7,7 @@ testing tool https://github.com/drwetter/testssl.sh via command files.
 
 Provides a long lived process that monitors a directory (via [watchdog](https://github.com/gorakhargosh/watchdog))
 for `testssl.sh` command files. As new files appear within the `--input-dir` containing the `--filename-filter`
-they are consumed and evaluated for `testssl.sh` commands, one per line. Each `testssl.sh` command is processed in a separate thread and processing results are logged to a YAML or JSON result file. under an `--output-dir`. The actual output from each invoked `testssl.sh` invocation is also written to disk scoped within a timestamped output directory scoped within the `--output-dir` (if specified per command in the command file via the `--*file` output arguments)
+they are consumed and evaluated for `testssl.sh` commands, one per line. Each `testssl.sh` command is processed in a separate thread and processing results are logged to a YAML or JSON result file under the `--output-dir`. The actual output from each invoked `testssl.sh` invocation (i.e. via `--*file` arguments) is also written to disk scoped within a timestamped output directory under the `--output-dir`
 
 ```bash
 ./testssl.sh-processor.py \
@@ -94,3 +94,7 @@ Contents of `testssl_processor_result_*.json`:
     }
 ]
 ```
+
+## Related
+
+* This tool was originally developed to consume `testssl.sh` command files generated as part of the [swarm-traefik-state-analyzer](https://github.com/bitsofinfo/swarm-traefik-state-analyzer/blob/master/docs/tlsssltools.md) project's [testsslcmdsgeneratory.py](https://github.com/bitsofinfo/swarm-traefik-state-analyzer/blob/master/docs/tlsssltools.md) script as part of a larger pipeline of scripts that continously monitors the state of applications deployed on Docker Swarm clusters.
