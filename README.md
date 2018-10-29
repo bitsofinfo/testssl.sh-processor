@@ -47,8 +47,6 @@ git clone https://github.com/drwetter/testssl.sh
   --output-dir ./testssl_processor_output \
   --filename-filter testssl_cmds \
   --result-format json
-
-2018-10-29 16:16:53,840 - root - INFO - Monitoring for new testssl_cmds files at: ./input with filename filter: testssl_cmds
 ```
 
 Given a `testssl_cmds` file with contents below dropped into directory `input/`
