@@ -4,26 +4,21 @@ __author__ = "bitsofinfo"
 
 
 from multiprocessing import Pool, Process
-import random
 import json
 import pprint
 import yaml
 import re
 import os
 import argparse
-import getopt, sys
+import sys
 import datetime
 import logging
-import base64
 import subprocess
 import time
 
 import threading
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
-from http import HTTPStatus
-from urllib.parse import urlparse
-from prometheus_client.core import GaugeMetricFamily, CounterMetricFamily, REGISTRY
 import concurrent.futures
 
 # Given an array of testssl.sh command parts
@@ -86,6 +81,8 @@ def execTestsslCmd(args):
 
     logging.info("Processing testssl_cmd: '%s'", testssl_cmd)
 
+    start = datetime.datetime.now()
+
     try:
         # Where our output dir is
         # for path arguments in the command
@@ -117,7 +114,6 @@ def execTestsslCmd(args):
         mkdirs(cmd_parts,outputdir_root)
 
         # execute the command
-        start = datetime.datetime.now()
         run_result = subprocess.run(testssl_cmd.split(),
                                     cwd=outputdir_root,
                                     stdout=subprocess.PIPE,
@@ -138,7 +134,7 @@ def execTestsslCmd(args):
             cmd_result["success"] = True
 
     except Exception as e:
-        logging.error(str(sys.exc_info()[:2]),e)
+        logging.exception("Unexpected error in spawning testssl.sh command: " + testssl_cmd + " error:" + str(sys.exc_info()[:2]))
         cmd_result["success"] = False
         cmd_result["exception"] = str(sys.exc_info()[:2])
 
@@ -180,7 +176,7 @@ class TestsslProcessor(object):
                 testssl_cmds = f.readlines()
                 testssl_cmds = [x.strip() for x in testssl_cmds]
         except:
-            logging.error("Unexpected error in open(testssl_cmds_file_path):", sys.exc_info()[0])
+            logging.exception("Unexpected error in open("+testssl_cmds_file_path+"): " + str(sys.exc_info()[0]))
 
         try:
             logging.info("Processing testssl_cmds: '%s'", testssl_cmds_file_path)
@@ -234,10 +230,10 @@ class TestsslProcessor(object):
                         logging.debug("Event %s Testssl processor result written to: %s",timestamp,output_filename)
 
             except Exception as e:
-                logging.error("Unexpected error in exec_pool.map -> execTestsslCmd():", sys.exc_info()[0])
+                logging.exception("Unexpected error in exec_pool.map -> execTestsslCmd(): " + str(sys.exc_info()[0]))
 
         except Exception as e:
-            logging.error("Unexpected error:", sys.exc_info()[0])
+            logging.exception("Unexpected error: " + str(sys.exc_info()[0]))
 
 
 
@@ -333,7 +329,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-i', '--input-dir', dest='input_dir', default="./input", help="Directory path to recursively monitor for new `--filename-filter` testssl.sh command files")
     parser.add_argument('-O', '--output-dir', dest='output_dir', default="./testssl_processor_output", help="Directory path to place all processor output, and testssl.sh output files to if relative paths are in command files. If absoluate paths are in testssl.sh command files they will be respected and only processor putput will go into --output-dir")
-    parser.add_argument('-m', '--testssl-path-if-missing', dest='testssl_path_if_missing', default=None, help="If the testssl.sh commands in the command files do not reference an absolute path to the testssl.sh command, it assumes its already on the PATH or in the current working directory of the processor. Otherwise you can specify the PATH to it with this argument")
+    parser.add_argument('-m', '--testssl-path-if-missing', dest='testssl_path_if_missing', default="./testssl.sh", help="If the testssl.sh commands in the command files do not reference an absolute path to the testssl.sh command, it assumes its already on the PATH or in the current working directory of the processor. Otherwise you can specify the PATH to it with this argument")
     parser.add_argument('-f', '--filename-filter', dest='filename_filter', default="testssl_cmds", help="Only react to filenames in --input-dir that contain the string --filename-filter, default 'testssl_cmds'")
     parser.add_argument('-o', '--result-filename-prefix', dest='result_filename_prefix', default="testssl_processor_result", help="processor execution result filename prefix")
     parser.add_argument('-q', '--result-format', dest='result_format', default="json", help="processor result filename format, json or yaml")
