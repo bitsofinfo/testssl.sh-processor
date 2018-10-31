@@ -148,11 +148,6 @@ def execTestsslCmd(args):
     return cmd_result
 
 
-# a prometheus client_python
-# custom "Collector": https://github.com/prometheus/client_python
-# This classes collect() method is called periodically
-# and it dumps the current state of the job_name_2_metrics_db
-# database of metrics
 class TestsslProcessor(object):
 
     # for controlling access to job_name_2_metrics_db
