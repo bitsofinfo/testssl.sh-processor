@@ -1,6 +1,6 @@
 *db.json
 *.json
-*.yaml
+
 *.yml
 *report.md
 *servicecheckerdb.yml
