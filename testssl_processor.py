@@ -2,6 +2,10 @@
 
 __author__ = "bitsofinfo"
 
+from twisted.web.server import Site
+from twisted.web.static import File
+from twisted.internet import reactor
+from twisted.internet import endpoints
 
 from multiprocessing import Pool, Process
 import json
@@ -281,11 +285,17 @@ def init_watching(input_dir,
                  testssl_threads,
                  result_filename_prefix,
                  result_format,
-                 testssl_path_if_missing):
+                 testssl_path_if_missing,
+                 output_dir_httpserver_port):
+
 
     # mthreaded...
     if (isinstance(watchdog_threads,str)):
         watchdog_threads = int(watchdog_threads)
+
+    # port...
+    if (isinstance(output_dir_httpserver_port,str)):
+        output_dir_httpserver_port = int(output_dir_httpserver_port)
 
     # create watchdog to look for new files
     event_handler = TestsslInputFileMonitor()
@@ -312,14 +322,25 @@ def init_watching(input_dir,
 
     logging.info("Monitoring for new testssl_cmds files at: %s with filename filter: %s",input_dir,filename_filter)
 
+
+    # start local http server?
+    httpdthread = None
+    if output_dir_httpserver_port is not None and isinstance(output_dir_httpserver_port,int):
+        logging.info("Starting HTTP server listening on: %d and serving up: %s" % (output_dir_httpserver_port,output_dir))
+        resource = File(output_dir)
+        factory = Site(resource)
+        endpoint = endpoints.TCP4ServerEndpoint(reactor, output_dir_httpserver_port)
+        endpoint.listen(factory)
+        httpdthread = threading.Thread(target=reactor.run,args=(False,))
+        httpdthread.daemon = True
+        httpdthread.start()
+
     try:
         while True:
             time.sleep(30)
     except KeyboardInterrupt:
         observer.stop()
     observer.join()
-
-
 
 
 ###########################
@@ -337,6 +358,7 @@ if __name__ == '__main__':
     parser.add_argument('-x', '--log-level', dest='log_level', default="DEBUG", help="log level, default DEBUG ")
     parser.add_argument('-w', '--watchdog-threads', dest='watchdog_threads', default=1, help="max threads for watchdog file processing, default 1")
     parser.add_argument('-t', '--testssl-threads', dest='testssl_threads', default=10, help="for each watchdog file event, the maximum number of commands to be processed concurrently by testssl.sh invocations, default 10")
+    parser.add_argument('-W', '--output-dir-httpserver-port', dest='output_dir_httpserver_port', default=None, help="Default None, if a numeric port is specified, this will startup a simple twisted http server who's document root is the --output-dir")
 
     args = parser.parse_args()
 
@@ -353,4 +375,5 @@ if __name__ == '__main__':
                   args.testssl_threads,
                   args.result_filename_prefix,
                   args.result_format,
-                  args.testssl_path_if_missing)
+                  args.testssl_path_if_missing,
+                  args.output_dir_httpserver_port)

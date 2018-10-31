@@ -18,7 +18,8 @@ they are consumed and evaluated for `testssl.sh` commands, one per line. Each `t
   --result-filename-prefix [prefix to prepend to processor result output files] \
   --result-format [json | yaml] \
   --watchdog_threads [N] \
-  --testssl_threads [N]
+  --testssl_threads [N] \
+  --output-dir-httpserver-port 8989
 ```
 
 Options:
@@ -33,6 +34,7 @@ Options:
 * `--log-level`: python log level (DEBUG, WARN ... etc)
 * `--watchdog-threads`: max threads for watchdog file processing, default 1
 * `--testssl-threads`: for each watchdog file event, the maximum number of commands to be processed concurrently by testssl.sh invocations, default 10
+* `--output-dir-httpserver-port`: Default None, if a numeric port is specified, this will startup a simple twisted http server who's document root is the `--output-dir`
 
 
 ## Example:
@@ -46,7 +48,8 @@ git clone https://github.com/drwetter/testssl.sh
   --testssl-path-if-missing ./testssl.sh \
   --output-dir ./testssl_processor_output \
   --filename-filter testssl_cmds \
-  --result-format json
+  --result-format json \
+  --output-dir-httpserver-port 8888
 ```
 
 Given a `testssl_cmds` file with contents below dropped into directory `input/`
@@ -58,17 +61,18 @@ testssl.sh -S -P -p --fast --logfile google.com.log --jsonfile-pretty google.com
 Now the `testssl_processor.py` output shows:
 
 ```
-2018-10-29 16:17:23,339 - root - INFO - Responding to creation of file: ./input/testssl_cmds
-
-2018-10-29 16:17:28,342 - root - INFO - Processing testssl_cmds: './input/testssl_cmds'
-2018-10-29 16:17:28,368 - root - INFO - Processing testssl_cmd: 'testssl.sh -S -P -p --fast --logfile google.com.log --jsonfile-pretty go
-ogle.com.json --csvfile google.com.csv --htmlfile google.com.html https://google.com'
-2018-10-29 16:18:28,905 - root - DEBUG - Command finished: exit code: 0 stdout.len:9090 stderr.len:0 cmd: /Users/bitsofinfo/Documents/omg/co
-de/github.com/bitsofinfo/testssl.sh-processor/testssl.sh/testssl.sh -S -P -p --fast --logfile google.com.log --jsonfile-pretty google.com
-.json --csvfile google.com.csv --htmlfile google.com.html https://google.com
+2018-10-31 16:31:38,792 - root - INFO - Monitoring for new testssl_cmds files at: ./input with filename filter: testssl_cmds
+2018-10-31 16:31:38,793 - root - INFO - Starting HTTP server listening on: 8888 and serving up: ./testssl_processor_output
+2018-10-31 16:31:47,179 - root - INFO - Responding to creation of file: ./input/testssl_cmds
+2018-10-31 16:31:52,184 - root - INFO - Processing testssl_cmds: './input/testssl_cmds'
+2018-10-31 16:31:52,212 - root - INFO - Processing testssl_cmd: 'testssl.sh -S -P -p --fast --logfile google.com.log --jsonfile-pretty
+google.com.json --csvfile google.com.csv --htmlfile google.com.html https://google.com'
+2018-10-31 16:32:52,328 - root - DEBUG - Command finished: exit code: 0 stdout.len:9194 stderr.len:0 cmd: /Users/bitsofinfo/Documents/xx/
+code/github.com/bitsofinfo/testssl.sh-processor/testssl.sh/testssl.sh -S -P -p --fast --logfile google.com.log --jsonfile-pretty google
+.com.json --csvfile google.com.csv --htmlfile google.com.html https://google.com
 json
-2018-10-29 16:18:28,908 - root - DEBUG - Event 20181029_161728 Testssl processor result written to: ./testssl_processor_output/testssl_pr
-ocessor_output_20181029_161728/testssl_processor_result_20181029_161728.json
+2018-10-31 16:32:52,331 - root - DEBUG - Event 20181031_163152 Testssl processor result written to: ./testssl_processor_output/testssl_
+processor_output_20181031_163152/testssl_processor_result_20181031_163152.json
 ```
 
 The contents of our `input/` and `testssl_processor_output/` dirs is now as follows.
@@ -83,17 +87,24 @@ Contents of `testssl_processor_result_*.json`:
     {
         "success": true,
         "orig_cmd": "testssl.sh -S -P -p --fast --logfile google.com.log --jsonfile-pretty google.com.json --csvfile google.com.csv --htmlfile google.com.html https://google.com",
-        "timestamp": "20181029_161728",
+        "timestamp": "20181031_163152",
         "testssl_path_if_missing": "./testssl.sh",
-        "actual_cmd": "/Users/bitsofinfo/Documents/omg/code/github.com/bitsofinfo/testssl.sh-processor/testssl.sh/testssl.sh -S -P -p --fast --logfile google.com.log --jsonfile-pretty google.com.json --csvfile google.com.csv --htmlfile google.com.html https://google.com",
-        "cwd": "./testssl_processor_output/testssl_processor_output_20181029_161728",
+        "actual_cmd": "/Users/bitsofinfo/Documents/xx/code/github.com/bitsofinfo/testssl.sh-processor/testssl.sh/testssl.sh -S -P -p --fast --logfile google.com.log --jsonfile-pretty google.com.json --csvfile google.com.csv --htmlfile google.com.html https://google.com",
+        "cwd": "./testssl_processor_output/testssl_processor_output_20181031_163152",
         "returncode": 0,
-        "stdout": "\u001b[1m\n###########################################################\n    testssl.sh       3.0rc2 from \u001b[m\u001b[1mhttps://testssl.sh/dev/\u001b[m\n\u001b[1m    (\u001b[m\u001b[1;30mc5c8310 2018-10-28 21:25:53 -- \u001b[m\u001b[1m)\u001b[m\n\u001b[1m\n      This program is free software. Distribution and\n             modification under GPLv2 permitted.\n      USAGE w/o ANY WARRANTY. USE IT AT YOUR OWN RISK!\n\n       Please file bugs @ \u001b[m\u001b[1mhttps://testssl.sh/bugs/\u001b[m\n\u001b[1m\n###########################################################\u001b[m\n\n Using \"OpenSSL 1.0.2-chacha (1.0.2i-dev)\" [~183 ciphers]\n .......",
+        "stdout": "\u001b[1m\n###########################################################\n    testssl.sh       3.0rc2 from \u001b[m\u001b[1mhttps://testssl.sh/dev/\u001b[m\n\u001b[1m    (\u001b[m\u001b[1;30me64519a 2018-10-31 09:02:05 -- \u001b[m\u001b[1m)\u001b[m\n\u001b[1m\n      This program is free software. Distribution and\n             modification under GPLv2 permitted.\n      USAGE w/o ANY WARRANTY. USE IT AT YOUR OWN RISK!\n\n       Please file bugs @ \u001b[m\u001b[1mhttps://testssl.sh/bugs/.........",
         "stderr": "",
-        "exec_ms": 60535.600000000006
+        "exec_ms": 60116.021
     }
 ]
 ```
+
+Hitting http://localhost:8888 in a browser:
+
+![](docs/httpd.png)
+
+
+
 
 ## Related
 
