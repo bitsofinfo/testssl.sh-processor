@@ -151,9 +151,6 @@ def execTestsslCmd(args):
 
 class TestsslProcessor(object):
 
-    # for controlling access to job_name_2_metrics_db
-    lock = threading.RLock()
-
     # total threads = total amount of commands
     # per file that can be processed concurrently
     threads = 1
@@ -181,9 +178,9 @@ class TestsslProcessor(object):
         if self.retain_output_days is not None:
             now = time.time() # in seconds!
             purge_older_than = now - (float(self.retain_output_days) * 86400) # 86400 = 24 hours = 1 day
-            for root, dirs, files in os.walk(self.output_dir, topdown=True):
+            for root, dirs, files in os.walk(self.output_dir, topdown=False):
                 for _dir in dirs:
-                    toeval = self.output_dir+"/"+_dir
+                    toeval = root+"/"+_dir
                     dir_timestamp = os.path.getmtime(toeval)
                     if dir_timestamp < purge_older_than:
                         logging.debug("Removing old directory: " +toeval)
@@ -199,10 +196,11 @@ class TestsslProcessor(object):
         except:
             logging.exception("Unexpected error in open("+testssl_cmds_file_path+"): " + str(sys.exc_info()[0]))
 
+        # exec pool
+        exec_pool = None
+
         try:
             logging.info("Processing testssl_cmds: '%s'", testssl_cmds_file_path)
-
-            exec_pool = None
 
             # init pool
             exec_pool = Pool(self.threads)
@@ -256,6 +254,16 @@ class TestsslProcessor(object):
         except Exception as e:
             logging.exception("Unexpected error: " + str(sys.exc_info()[0]))
 
+        finally:
+            try:
+                if self.exec_pool is not None:
+                    self.exec_pool.close()
+                    self.exec_pool.terminate()
+                    self.exec_pool = None
+                    logging.debug("Pool closed and terminated")
+            except:
+                logging.exception("Error terminating, closing pool")
+
 
 
 class TestsslInputFileMonitor(FileSystemEventHandler):
@@ -279,6 +287,7 @@ class TestsslInputFileMonitor(FileSystemEventHandler):
         super(TestsslInputFileMonitor, self).on_created(event)
 
         if not self.executor:
+            print(self.threads)
             self.executor = concurrent.futures.ThreadPoolExecutor(max_workers=self.threads)
 
         if event.is_directory:
@@ -290,7 +299,6 @@ class TestsslInputFileMonitor(FileSystemEventHandler):
 
             # give write time to close....
             time.sleep(5)
-
             self.executor.submit(self.testssl_processor.processCmdsFile,event.src_path)
 
 
@@ -376,7 +384,7 @@ if __name__ == '__main__':
     parser.add_argument('-l', '--log-file', dest='log_file', default=None, help="Path to log file, default None, STDOUT")
     parser.add_argument('-x', '--log-level', dest='log_level', default="DEBUG", help="log level, default DEBUG ")
     parser.add_argument('-w', '--watchdog-threads', dest='watchdog_threads', default=1, help="max threads for watchdog file processing, default 1")
-    parser.add_argument('-t', '--testssl-threads', dest='testssl_threads', default=10, help="for each watchdog file event, the maximum number of commands to be processed concurrently by testssl.sh invocations, default 10")
+    parser.add_argument('-t', '--testssl-threads', dest='testssl_threads', default=5, help="for each watchdog file event, the maximum number of commands to be processed concurrently by testssl.sh invocations, default 10")
     parser.add_argument('-W', '--output-dir-httpserver-port', dest='output_dir_httpserver_port', default=None, help="Default None, if a numeric port is specified, this will startup a simple twisted http server who's document root is the --output-dir")
     parser.add_argument('-u', '--retain-output-days', dest='retain_output_days', default=7, help="Optional, default 7, the number of days of data to retain that ends up under `--output-dir`, purges output dirs older than this time threshold")
 
