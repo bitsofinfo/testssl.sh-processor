@@ -1,7 +1,9 @@
 # testssl.sh-processor
 
-This project is intended to provide mass concurrent invocations of the great SSL/TLS
+This project is intended to serve as part of a larger pipeline for mass concurrent invocations of the great SSL/TLS
 testing tool https://github.com/drwetter/testssl.sh via command files.
+
+![](docs/arch1.png)
 
 ## testssl_processor.py
 
@@ -103,9 +105,6 @@ Contents of `testssl_processor_result_*.json`:
 Hitting http://localhost:8888 in a browser:
 
 ![](docs/httpd.png)
-
-
-
 
 ## Related
 
