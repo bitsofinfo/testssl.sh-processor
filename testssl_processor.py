@@ -256,10 +256,10 @@ class TestsslProcessor(object):
 
         finally:
             try:
-                if self.exec_pool is not None:
-                    self.exec_pool.close()
-                    self.exec_pool.terminate()
-                    self.exec_pool = None
+                if exec_pool is not None:
+                    exec_pool.close()
+                    exec_pool.terminate()
+                    exec_pool = None
                     logging.debug("Pool closed and terminated")
             except:
                 logging.exception("Error terminating, closing pool")
