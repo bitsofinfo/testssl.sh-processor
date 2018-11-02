@@ -11,6 +11,17 @@ Provides a long lived watchdog process that monitors a directory (via [watchdog]
 for `testssl.sh` command files. As new files appear within the `--input-dir` containing the `--filename-filter`
 they are consumed and evaluated for `testssl.sh` commands, one per line. Each `testssl.sh` command is processed in a separate thread and processing results are logged to a YAML or JSON result file under the `--output-dir`. The actual output from each invoked `testssl.sh` invocation (i.e. via `--*file` arguments) is also written to disk scoped within a timestamped output directory under the `--output-dir`
 
+# Requirements
+
+Python 3
+
+Dependencies:
+```
+pip install twisted pyyaml python-dateutil watchdog
+```
+
+# Manual
+
 ```bash
 ./testssl.sh-processor.py \
   --input-dir [input dir to watch] \
@@ -22,6 +33,19 @@ they are consumed and evaluated for `testssl.sh` commands, one per line. Each `t
   --watchdog_threads [N] \
   --testssl_threads [N] \
   --output-dir-httpserver-port 8989
+```
+
+# Docker
+```
+docker build -t testssl-processor .
+
+docker run \
+  -v /pathto/input:/input -v /pathto/output:/output \
+  testssl-processor:latest \
+  testssl_processor.py \
+    --input-dir /input \
+    --output-dir /output \
+    -W 8888 -t 5 -u .1
 ```
 
 Options:
