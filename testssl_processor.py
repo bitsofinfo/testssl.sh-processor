@@ -13,6 +13,7 @@ import pprint
 import yaml
 import re
 import os
+import shutil
 import argparse
 import sys
 import datetime
@@ -163,6 +164,9 @@ class TestsslProcessor(object):
     result_filename_prefix = 'testssl_processor_result'
     result_format = 'json'
 
+    # for cleanups of generated data
+    retain_output_days = 7 # one week
+
     # this is invoked by prometheus_client.core
     # on some sort of schedule or by request to get
     # latest metrics
@@ -172,6 +176,19 @@ class TestsslProcessor(object):
 
     # Will process the testssl_cmds file
     def processCmdsFile(self,testssl_cmds_file_path):
+
+        # cleanup old data
+        if self.retain_output_days is not None:
+            now = time.time() # in seconds!
+            purge_older_than = now - (float(self.retain_output_days) * 86400) # 86400 = 24 hours = 1 day
+            for root, dirs, files in os.walk(self.output_dir, topdown=True):
+                for _dir in dirs:
+                    toeval = self.output_dir+"/"+_dir
+                    dir_timestamp = os.path.getmtime(toeval)
+                    if dir_timestamp < purge_older_than:
+                        logging.debug("Removing old directory: " +toeval)
+                        shutil.rmtree(toeval)
+
 
         # open the file
         testssl_cmds = []
@@ -286,7 +303,8 @@ def init_watching(input_dir,
                  result_filename_prefix,
                  result_format,
                  testssl_path_if_missing,
-                 output_dir_httpserver_port):
+                 output_dir_httpserver_port,
+                 retain_output_days):
 
 
     # mthreaded...
@@ -304,6 +322,7 @@ def init_watching(input_dir,
 
     # Create a TestsslProcessor to consume the testssl_cmds files
     event_handler.testssl_processor = TestsslProcessor()
+    event_handler.testssl_processor.retain_output_days = retain_output_days
     event_handler.testssl_processor.testssl_path_if_missing = testssl_path_if_missing
     event_handler.testssl_processor.output_dir = output_dir
     event_handler.testssl_processor.result_filename_prefix = result_filename_prefix
@@ -349,7 +368,7 @@ def init_watching(input_dir,
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-i', '--input-dir', dest='input_dir', default="./input", help="Directory path to recursively monitor for new `--filename-filter` testssl.sh command files")
-    parser.add_argument('-O', '--output-dir', dest='output_dir', default="./testssl_processor_output", help="Directory path to place all processor output, and testssl.sh output files to if relative paths are in command files. If absoluate paths are in testssl.sh command files they will be respected and only processor putput will go into --output-dir")
+    parser.add_argument('-O', '--output-dir', dest='output_dir', default="./testssl_processor_output", help="Directory path to place all processor output, and testssl.sh output files to if relative paths are in command files. If absoluate paths are in testssl.sh command files they will be respected and only processor output will go into --output-dir")
     parser.add_argument('-m', '--testssl-path-if-missing', dest='testssl_path_if_missing', default="./testssl.sh", help="If the testssl.sh commands in the command files do not reference an absolute path to the testssl.sh command, it assumes its already on the PATH or in the current working directory of the processor. Otherwise you can specify the PATH to it with this argument")
     parser.add_argument('-f', '--filename-filter', dest='filename_filter', default="testssl_cmds", help="Only react to filenames in --input-dir that contain the string --filename-filter, default 'testssl_cmds'")
     parser.add_argument('-o', '--result-filename-prefix', dest='result_filename_prefix', default="testssl_processor_result", help="processor execution result filename prefix")
@@ -359,6 +378,7 @@ if __name__ == '__main__':
     parser.add_argument('-w', '--watchdog-threads', dest='watchdog_threads', default=1, help="max threads for watchdog file processing, default 1")
     parser.add_argument('-t', '--testssl-threads', dest='testssl_threads', default=10, help="for each watchdog file event, the maximum number of commands to be processed concurrently by testssl.sh invocations, default 10")
     parser.add_argument('-W', '--output-dir-httpserver-port', dest='output_dir_httpserver_port', default=None, help="Default None, if a numeric port is specified, this will startup a simple twisted http server who's document root is the --output-dir")
+    parser.add_argument('-u', '--retain-output-days', dest='retain_output_days', default=7, help="Optional, default 7, the number of days of data to retain that ends up under `--output-dir`, purges output dirs older than this time threshold")
 
     args = parser.parse_args()
 
@@ -376,4 +396,5 @@ if __name__ == '__main__':
                   args.result_filename_prefix,
                   args.result_format,
                   args.testssl_path_if_missing,
-                  args.output_dir_httpserver_port)
+                  args.output_dir_httpserver_port,
+                  args.retain_output_days)

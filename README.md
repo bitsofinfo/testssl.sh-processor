@@ -35,6 +35,7 @@ Options:
 * `--watchdog-threads`: max threads for watchdog file processing, default 1
 * `--testssl-threads`: for each watchdog file event, the maximum number of commands to be processed concurrently by testssl.sh invocations, default 10
 * `--output-dir-httpserver-port`: Default None, if a numeric port is specified, this will startup a simple twisted http server who's document root is the `--output-dir`
+* `--retain-output-days`: Optional, default 7, the number of days of data to retain that ends up under `--output-dir`, purges output dirs older than this time threshold
 
 
 ## Example:
