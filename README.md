@@ -3,7 +3,7 @@
 This project is intended to serve as part of a larger pipeline for mass concurrent invocations of the great SSL/TLS
 testing tool https://github.com/drwetter/testssl.sh via command files.
 
-![](docs/arch1.png)
+![](docs/diag1.png)
 
 ## testssl_processor.py
 
