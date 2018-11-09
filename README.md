@@ -3,6 +3,8 @@
 This project is intended to serve as part of a larger pipeline for mass concurrent invocations of the great SSL/TLS
 testing tool https://github.com/drwetter/testssl.sh via command files.
 
+See the sibling project [testssl.sh-alerts](https://github.com/bitsofinfo/testssl.sh-alerts) for an reactive engine that can react to `testssl.sh` JSON result output files to send notifications etc.
+
 ![](docs/diag1.png)
 
 ## testssl_processor.py
