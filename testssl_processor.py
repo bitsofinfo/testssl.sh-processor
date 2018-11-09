@@ -55,6 +55,7 @@ def mkdirs(cmd_parts, outputdir_root):
 
             # ensure the path exists
             tmp_path,file = os.path.split(target_path)
+            tmp_path = tmp_path.replace("//","/")
             if not os.path.isdir(tmp_path):
                 print("making dir: " + tmp_path)
                 try:
