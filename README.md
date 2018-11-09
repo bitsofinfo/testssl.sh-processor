@@ -23,16 +23,63 @@ pip install twisted pyyaml python-dateutil watchdog
 # Manual
 
 ```bash
-./testssl.sh-processor.py \
-  --input-dir [input dir to watch] \
-  --output-dir [output dir]
-  --job-name [optional name for this execution job] \
-  --filename-filter [only react to names matching this] \
-  --result-filename-prefix [prefix to prepend to processor result output files] \
-  --result-format [json | yaml] \
-  --watchdog_threads [N] \
-  --testssl_threads [N] \
-  --output-dir-httpserver-port 8989
+./testssl_processor.py --help                                                                                       
+
+usage: testssl_processor.py [-h] [-i INPUT_DIR] [-O OUTPUT_DIR]
+                            [-m TESTSSL_PATH_IF_MISSING] [-f FILENAME_FILTER]
+                            [-o RESULT_FILENAME_PREFIX] [-q RESULT_FORMAT]
+                            [-l LOG_FILE] [-x LOG_LEVEL] [-w WATCHDOG_THREADS]
+                            [-t TESTSSL_THREADS]
+                            [-W OUTPUT_DIR_HTTPSERVER_PORT]
+                            [-u RETAIN_OUTPUT_DAYS]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -i INPUT_DIR, --input-dir INPUT_DIR
+                        Directory path to recursively monitor for new
+                        `--filename-filter` testssl.sh command files. Default
+                        './input'
+  -O OUTPUT_DIR, --output-dir OUTPUT_DIR
+                        Directory path to place all processor output, and
+                        testssl.sh output files to if relative paths are in
+                        command files. If absoluate paths are in testssl.sh
+                        command files they will be respected and only
+                        processor output will go into --output-dir. Default
+                        './output'
+  -m TESTSSL_PATH_IF_MISSING, --testssl-path-if-missing TESTSSL_PATH_IF_MISSING
+                        If the testssl.sh commands in the command files do not
+                        reference an absolute path to the testssl.sh command,
+                        it assumes its already on the PATH or in the current
+                        working directory of the processor. Otherwise you can
+                        specify the PATH to it with this argument. Default
+                        './testssl.sh'
+  -f FILENAME_FILTER, --filename-filter FILENAME_FILTER
+                        Only react to filenames in --input-dir that contain
+                        the string --filename-filter, default 'testssl_cmds'
+  -o RESULT_FILENAME_PREFIX, --result-filename-prefix RESULT_FILENAME_PREFIX
+                        processor execution result filename prefix. Default
+                        'testssl_processor_result'
+  -q RESULT_FORMAT, --result-format RESULT_FORMAT
+                        processor result filename format, json or yaml.
+                        Default 'json'
+  -l LOG_FILE, --log-file LOG_FILE
+                        Path to log file, default None which means STDOUT
+  -x LOG_LEVEL, --log-level LOG_LEVEL
+                        log level, default DEBUG
+  -w WATCHDOG_THREADS, --watchdog-threads WATCHDOG_THREADS
+                        max threads for watchdog file processing, default 1
+  -t TESTSSL_THREADS, --testssl-threads TESTSSL_THREADS
+                        for each watchdog file event, the maximum number of
+                        commands to be processed concurrently by testssl.sh
+                        invocations, default 5
+  -W OUTPUT_DIR_HTTPSERVER_PORT, --output-dir-httpserver-port OUTPUT_DIR_HTTPSERVER_PORT
+                        Default None, if a numeric port is specified, this
+                        will startup a simple twisted http server who's
+                        document root is the --output-dir
+  -u RETAIN_OUTPUT_DAYS, --retain-output-days RETAIN_OUTPUT_DAYS
+                        Optional, default 7, the number of days of data to
+                        retain that ends up under `--output-dir`, purges
+                        output dirs older than this time threshold
 ```
 
 # Docker
@@ -45,24 +92,10 @@ docker run \
   testssl_processor.py \
     --input-dir /input \
     --output-dir /output \
-    -W 8888 -t 5 -u .1
+    --output-dir-httpserver-port 8888 \
+    --testssl-threads 5 \
+    --retain-output-days .1
 ```
-
-Options:
-* `--input-dir`: Directory path to recursively monitor for new `--filename-filter` testssl.sh command files
-* `--output-dir`: Directory path to place all processor output, and testssl.sh output files to only IF relative paths are referenced in command files. If absolute paths are in testssl.sh command files they will be respected and only processor result output files will go into `--output-dir`
-* `--testssl-path-if-missing`: If the commands do not reference an absolute path to the testssl.sh command, it assumes its already on the PATH or in the current working directory of the processor. Otherwise you can specify the PATH to it with this argument
-* `--filename-filter`: Only react to filenames in `--input-dir` that contain the string `--filename-filter`, default `testssl_cmds`
-* `--result-filename-prefix`: Only react to filenames in `--input-dir` that contain the string `--filename-filter`, default 'testssl_cmds'
-* `--result-filename-prefix`: processor execution result filename prefix for files written to `--output-dir`
-* `--result-format`: yaml or json
-* `--log-file`: path to log file, otherwise STDOUT
-* `--log-level`: python log level (DEBUG, WARN ... etc)
-* `--watchdog-threads`: max threads for watchdog file processing, default 1
-* `--testssl-threads`: for each watchdog file event, the maximum number of commands to be processed concurrently by testssl.sh invocations, default 10
-* `--output-dir-httpserver-port`: Default None, if a numeric port is specified, this will startup a simple twisted http server who's document root is the `--output-dir`
-* `--retain-output-days`: Optional, default 7, the number of days of data to retain that ends up under `--output-dir`, purges output dirs older than this time threshold
-
 
 ## Example:
 
