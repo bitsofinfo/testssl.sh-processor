@@ -103,10 +103,13 @@ Run the command:
 ```
 git clone https://github.com/drwetter/testssl.sh
 
+mkdir input
+mkdir output
+
 ./testssl_processor.py \
   --input-dir ./input \
   --testssl-path-if-missing ./testssl.sh \
-  --output-dir ./testssl_processor_output \
+  --output-dir ./output \
   --filename-filter testssl_cmds \
   --result-format json \
   --output-dir-httpserver-port 8888
@@ -121,21 +124,18 @@ testssl.sh -S -P -p --fast --logfile google.com.log --jsonfile-pretty google.com
 Now the `testssl_processor.py` output shows:
 
 ```
-2018-10-31 16:31:38,792 - root - INFO - Monitoring for new testssl_cmds files at: ./input with filename filter: testssl_cmds
-2018-10-31 16:31:38,793 - root - INFO - Starting HTTP server listening on: 8888 and serving up: ./testssl_processor_output
-2018-10-31 16:31:47,179 - root - INFO - Responding to creation of file: ./input/testssl_cmds
-2018-10-31 16:31:52,184 - root - INFO - Processing testssl_cmds: './input/testssl_cmds'
-2018-10-31 16:31:52,212 - root - INFO - Processing testssl_cmd: 'testssl.sh -S -P -p --fast --logfile google.com.log --jsonfile-pretty
-google.com.json --csvfile google.com.csv --htmlfile google.com.html https://google.com'
-2018-10-31 16:32:52,328 - root - DEBUG - Command finished: exit code: 0 stdout.len:9194 stderr.len:0 cmd: /Users/bitsofinfo/Documents/xx/
-code/github.com/bitsofinfo/testssl.sh-processor/testssl.sh/testssl.sh -S -P -p --fast --logfile google.com.log --jsonfile-pretty google
-.com.json --csvfile google.com.csv --htmlfile google.com.html https://google.com
+2018-11-09 05:06:07,174 - root - INFO - Monitoring for new testssl_cmds files at: ./input with filename filter: testssl_cmds
+2018-11-09 05:06:07,175 - root - INFO - Starting HTTP server listening on: 8888 and serving up: ./output
+2018-11-09 05:06:39,403 - root - INFO - Responding to creation of file: ./input/testssl_cmds
+2018-11-09 05:06:44,408 - root - INFO - Processing testssl_cmds: './input/testssl_cmds'
+2018-11-09 05:06:44,431 - root - INFO - Processing testssl_cmd: 'testssl.sh -S -P -p --fast --logfile google.com.log --jsonfile-pretty google.com.json --csvfile google.com.csv --htmlfile google.com.html https://google.com'
+2018-11-09 05:07:40,826 - root - DEBUG - Command finished: exit code: 0 stdout.len:9014 stderr.len:0 cmd: /private/tmp/junk/testssl.sh-processor/testssl.sh/testssl.sh -S -P -p --fast --logfile google.com.log --jsonfile-pretty google.com.json --csvfile google.com.csv --htmlfile google.com.html https://google.com
 json
-2018-10-31 16:32:52,331 - root - DEBUG - Event 20181031_163152 Testssl processor result written to: ./testssl_processor_output/testssl_
-processor_output_20181031_163152/testssl_processor_result_20181031_163152.json
+2018-11-09 05:07:40,830 - root - DEBUG - Event 20181109_050644 Testssl processor result written to: ./output/testssl_processor_output_20181109_050644/testssl_processor_result_20181109_050644.json
+2018-11-09 05:07:40,924 - root - DEBUG - Pool closed and terminated
 ```
 
-The contents of our `input/` and `testssl_processor_output/` dirs is now as follows.
+The contents of our `input/` and `output/` dirs is now as follows.
 The actual output of the `testssl.sh` commands `--*file` directives are in the respective html/json files etc, while the output from the processor itself that invokes all the `testssl.sh` commands is in the `testssl_processor_result_*.json` files.
 
 ![](docs/dirs.png)
@@ -147,14 +147,14 @@ Contents of `testssl_processor_result_*.json`:
     {
         "success": true,
         "orig_cmd": "testssl.sh -S -P -p --fast --logfile google.com.log --jsonfile-pretty google.com.json --csvfile google.com.csv --htmlfile google.com.html https://google.com",
-        "timestamp": "20181031_163152",
+        "timestamp": "20181109_050644",
         "testssl_path_if_missing": "./testssl.sh",
-        "actual_cmd": "/Users/bitsofinfo/Documents/xx/code/github.com/bitsofinfo/testssl.sh-processor/testssl.sh/testssl.sh -S -P -p --fast --logfile google.com.log --jsonfile-pretty google.com.json --csvfile google.com.csv --htmlfile google.com.html https://google.com",
-        "cwd": "./testssl_processor_output/testssl_processor_output_20181031_163152",
+        "actual_cmd": "/private/tmp/junk/testssl.sh-processor/testssl.sh/testssl.sh -S -P -p --fast --logfile google.com.log --jsonfile-pretty google.com.json --csvfile google.com.csv --htmlfile google.com.html https://google.com",
+        "cwd": "./output/testssl_processor_output_20181109_050644",
         "returncode": 0,
-        "stdout": "\u001b[1m\n###########################################################\n    testssl.sh       3.0rc2 from \u001b[m\u001b[1mhttps://testssl.sh/dev/\u001b[m\n\u001b[1m    (\u001b[m\u001b[1;30me64519a 2018-10-31 09:02:05 -- \u001b[m\u001b[1m)\u001b[m\n\u001b[1m\n      This program is free software. Distribution and\n             modification under GPLv2 permitted.\n      USAGE w/o ANY WARRANTY. USE IT AT YOUR OWN RISK!\n\n       Please file bugs @ \u001b[m\u001b[1mhttps://testssl.sh/bugs/.........",
+        "stdout": "\u001b[1m\n###########################################################\n    testssl.sh       3.0rc2 from \u001b[m\u001b[1mhttps://testssl.sh/dev/\u001b[m\n\u001b[1m    (\u001b[m\u001b[1;30mafe1419 2018-11-08 22:00:47 -- \u001b[m\u001b[1m)\u001b[m\n\u001b[1m\n      This program is free software. Distribution and\n             modification under GPLv2 permitted.\n      USAGE w/o ANY WARRANTY. USE IT AT YOUR OWN RISK!\n\n       Please file bugs @ \u001b[m\u001b[1mhttps://testssl.sh/bugs/\u001b[m\n\u001b[1m\n###########################################################\u001b[m\n\n Using \"OpenSSL 1.0.2-chacha (1.0.2i-dev)\" [~183 ciphers]\n on XXXXXX:/private/tmp/junk/testssl.sh-processor/testssl.sh/bin/openssl.Darwin.x86_64\n (built: \"Sep  7 19:34:54 2016\", platform: \"darwin64-x86_64-cc\")\n\n\n\u001b[7m Start 2018-11-08 22:06:48        -->> 172.217.10.142:443 (google.com) <<--\u001b[m\n\n Further IP addresses:   2607:f8b0:4006:812::200e \n rDNS (172.217.10.142):  lga34s16-in-f14.1e100.net.\n Service detected: ...........",
         "stderr": "",
-        "exec_ms": 60116.021
+        "exec_ms": 56395.165
     }
 ]
 ```
