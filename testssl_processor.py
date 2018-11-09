@@ -375,16 +375,16 @@ def init_watching(input_dir,
 ##########################
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('-i', '--input-dir', dest='input_dir', default="./input", help="Directory path to recursively monitor for new `--filename-filter` testssl.sh command files")
-    parser.add_argument('-O', '--output-dir', dest='output_dir', default="./testssl_processor_output", help="Directory path to place all processor output, and testssl.sh output files to if relative paths are in command files. If absoluate paths are in testssl.sh command files they will be respected and only processor output will go into --output-dir")
-    parser.add_argument('-m', '--testssl-path-if-missing', dest='testssl_path_if_missing', default="./testssl.sh", help="If the testssl.sh commands in the command files do not reference an absolute path to the testssl.sh command, it assumes its already on the PATH or in the current working directory of the processor. Otherwise you can specify the PATH to it with this argument")
+    parser.add_argument('-i', '--input-dir', dest='input_dir', default="./input", help="Directory path to recursively monitor for new `--filename-filter` testssl.sh command files. Default './input'")
+    parser.add_argument('-O', '--output-dir', dest='output_dir', default="./output", help="Directory path to place all processor output, and testssl.sh output files to if relative paths are in command files. If absoluate paths are in testssl.sh command files they will be respected and only processor output will go into --output-dir. Default './output'")
+    parser.add_argument('-m', '--testssl-path-if-missing', dest='testssl_path_if_missing', default="./testssl.sh", help="If the testssl.sh commands in the command files do not reference an absolute path to the testssl.sh command, it assumes its already on the PATH or in the current working directory of the processor. Otherwise you can specify the PATH to it with this argument. Default './testssl.sh'")
     parser.add_argument('-f', '--filename-filter', dest='filename_filter', default="testssl_cmds", help="Only react to filenames in --input-dir that contain the string --filename-filter, default 'testssl_cmds'")
-    parser.add_argument('-o', '--result-filename-prefix', dest='result_filename_prefix', default="testssl_processor_result", help="processor execution result filename prefix")
-    parser.add_argument('-q', '--result-format', dest='result_format', default="json", help="processor result filename format, json or yaml")
-    parser.add_argument('-l', '--log-file', dest='log_file', default=None, help="Path to log file, default None, STDOUT")
+    parser.add_argument('-o', '--result-filename-prefix', dest='result_filename_prefix', default="testssl_processor_result", help="processor execution result filename prefix. Default 'testssl_processor_result'")
+    parser.add_argument('-q', '--result-format', dest='result_format', default="json", help="processor result filename format, json or yaml. Default 'json'")
+    parser.add_argument('-l', '--log-file', dest='log_file', default=None, help="Path to log file, default None which means STDOUT")
     parser.add_argument('-x', '--log-level', dest='log_level', default="DEBUG", help="log level, default DEBUG ")
     parser.add_argument('-w', '--watchdog-threads', dest='watchdog_threads', default=1, help="max threads for watchdog file processing, default 1")
-    parser.add_argument('-t', '--testssl-threads', dest='testssl_threads', default=5, help="for each watchdog file event, the maximum number of commands to be processed concurrently by testssl.sh invocations, default 10")
+    parser.add_argument('-t', '--testssl-threads', dest='testssl_threads', default=5, help="for each watchdog file event, the maximum number of commands to be processed concurrently by testssl.sh invocations, default 5")
     parser.add_argument('-W', '--output-dir-httpserver-port', dest='output_dir_httpserver_port', default=None, help="Default None, if a numeric port is specified, this will startup a simple twisted http server who's document root is the --output-dir")
     parser.add_argument('-u', '--retain-output-days', dest='retain_output_days', default=7, help="Optional, default 7, the number of days of data to retain that ends up under `--output-dir`, purges output dirs older than this time threshold")
 
