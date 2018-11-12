@@ -26,6 +26,10 @@ from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 import concurrent.futures
 
+
+# Our logger
+logger = None
+
 # Given an array of testssl.sh command parts
 # and a target root output_dir, this will will
 # do its best to detect filesystem path arguments
@@ -85,7 +89,7 @@ def execTestsslCmd(args):
                    "timestamp":timestamp,
                    "testssl_path_if_missing":testssl_path_if_missing }
 
-    logging.info("Processing testssl_cmd: '%s'", testssl_cmd)
+    logger.info("Processing testssl_cmd: '%s'", testssl_cmd)
 
     start = datetime.datetime.now()
 
@@ -125,7 +129,7 @@ def execTestsslCmd(args):
                                     stdout=subprocess.PIPE,
                                     stderr=subprocess.PIPE)
 
-        logging.debug("Command finished: exit code: " + str(run_result.returncode) +
+        logger.debug("Command finished: exit code: " + str(run_result.returncode) +
             " stdout.len:" +str(len(run_result.stdout)) +
             " stderr.len:" +str(len(run_result.stderr)) +
             " cmd: " + testssl_cmd)
@@ -140,7 +144,7 @@ def execTestsslCmd(args):
             cmd_result["success"] = True
 
     except Exception as e:
-        logging.exception("Unexpected error in spawning testssl.sh command: " + testssl_cmd + " error:" + str(sys.exc_info()[:2]))
+        logger.exception("Unexpected error in spawning testssl.sh command: " + testssl_cmd + " error:" + str(sys.exc_info()[:2]))
         cmd_result["success"] = False
         cmd_result["exception"] = str(sys.exc_info()[:2])
 
@@ -184,7 +188,7 @@ class TestsslProcessor(object):
                     toeval = root+"/"+_dir
                     dir_timestamp = os.path.getmtime(toeval)
                     if dir_timestamp < purge_older_than:
-                        logging.debug("Removing old directory: " +toeval)
+                        logger.debug("Removing old directory: " +toeval)
                         shutil.rmtree(toeval)
 
 
@@ -195,13 +199,13 @@ class TestsslProcessor(object):
                 testssl_cmds = f.readlines()
                 testssl_cmds = [x.strip() for x in testssl_cmds]
         except:
-            logging.exception("Unexpected error in open("+testssl_cmds_file_path+"): " + str(sys.exc_info()[0]))
+            logger.exception("Unexpected error in open("+testssl_cmds_file_path+"): " + str(sys.exc_info()[0]))
 
         # exec pool
         exec_pool = None
 
         try:
-            logging.info("Processing testssl_cmds: '%s'", testssl_cmds_file_path)
+            logger.info("Processing testssl_cmds: '%s'", testssl_cmds_file_path)
 
             # init pool
             exec_pool = Pool(self.threads)
@@ -247,13 +251,13 @@ class TestsslProcessor(object):
                         else:
                             yaml.dump(testssl_cmds_results, outfile, default_flow_style=False)
 
-                        logging.debug("Event %s Testssl processor result written to: %s",timestamp,output_filename)
+                        logger.debug("Event %s Testssl processor result written to: %s",timestamp,output_filename)
 
             except Exception as e:
-                logging.exception("Unexpected error in exec_pool.map -> execTestsslCmd(): " + str(sys.exc_info()[0]))
+                logger.exception("Unexpected error in exec_pool.map -> execTestsslCmd(): " + str(sys.exc_info()[0]))
 
         except Exception as e:
-            logging.exception("Unexpected error: " + str(sys.exc_info()[0]))
+            logger.exception("Unexpected error: " + str(sys.exc_info()[0]))
 
         finally:
             try:
@@ -261,9 +265,9 @@ class TestsslProcessor(object):
                     exec_pool.close()
                     exec_pool.terminate()
                     exec_pool = None
-                    logging.debug("Pool closed and terminated")
+                    logger.debug("Pool closed and terminated")
             except:
-                logging.exception("Error terminating, closing pool")
+                logger.exception("Error terminating, closing pool")
 
 
 
@@ -296,7 +300,7 @@ class TestsslInputFileMonitor(FileSystemEventHandler):
 
         if self.filename_filter in event.src_path:
 
-            logging.info("Responding to creation of %s: %s", "file", event.src_path)
+            logger.info("Responding to creation of %s: %s", "file", event.src_path)
 
             # give write time to close....
             time.sleep(5)
@@ -348,13 +352,13 @@ def init_watching(input_dir,
     observer.schedule(event_handler, input_dir, recursive=True)
     observer.start()
 
-    logging.info("Monitoring for new testssl_cmds files at: %s with filename filter: %s",input_dir,filename_filter)
+    logger.info("Monitoring for new testssl_cmds files at: %s with filename filter: %s",input_dir,filename_filter)
 
 
     # start local http server?
     httpdthread = None
     if output_dir_httpserver_port is not None and isinstance(output_dir_httpserver_port,int):
-        logging.info("Starting HTTP server listening on: %d and serving up: %s" % (output_dir_httpserver_port,output_dir))
+        logger.info("Starting HTTP server listening on: %d and serving up: %s" % (output_dir_httpserver_port,output_dir))
         resource = File(output_dir)
         factory = Site(resource)
         endpoint = endpoints.TCP4ServerEndpoint(reactor, output_dir_httpserver_port)
@@ -391,11 +395,15 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    logging.basicConfig(level=logging.getLevelName(args.log_level),
+    # Global root logger
+    logging.basicConfig(level="INFO",
                         format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
                         filename=args.log_file,filemode='w')
     logging.Formatter.converter = time.gmtime
 
+    # our logger
+    logger = logging.getLogger(__name__)
+    logger.setLevel(args.log_level)
 
     init_watching(args.input_dir,
                   args.output_dir,

@@ -15,14 +15,14 @@ they are consumed and evaluated for `testssl.sh` commands, one per line. Each `t
 
 # Requirements
 
-Python 3
+**Python 3**
 
 Dependencies:
 ```
 pip install twisted pyyaml python-dateutil watchdog
 ```
 
-# Manual
+# Usage
 
 ```bash
 ./testssl_processor.py --help                                                                                       
