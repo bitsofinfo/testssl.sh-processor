@@ -348,6 +348,7 @@ def init_watching(input_dir,
     observer.schedule(event_handler, input_dir, recursive=True)
     observer.start()
     logging.getLogger("watchdog.observers.inotify_buffer").setLevel("INFO")
+    logging.getLogger("inotify_buffer").setLevel("INFO")
 
     logging.info("Monitoring for new testssl_cmds files at: %s with filename filter: %s",input_dir,filename_filter)
 
