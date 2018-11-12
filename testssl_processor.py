@@ -212,8 +212,8 @@ class TestsslProcessor(object):
             # my working dir
             my_working_dir = os.path.dirname(os.path.realpath(__file__));
 
-            # append ts subdir to outputdir_root
-            outputdir_root = self.output_dir + "/testssl_processor_output_" + timestamp
+            # append the event filename+timestamp as a subdir for this "job" off of main output_dir/
+            outputdir_root = self.output_dir + "/" + timestamp + "-" + os.path.basename(testssl_cmds_file_path)
 
             # ensure exists
             os.makedirs(outputdir_root)
