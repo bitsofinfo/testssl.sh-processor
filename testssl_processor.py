@@ -238,7 +238,7 @@ class TestsslProcessor(object):
 
                 # log the processor execution results
                 output_filename = outputdir_root + "/" + self.result_filename_prefix + "_" + timestamp
-                print(self.result_format)
+
                 if self.result_format == 'yaml':
                     output_filename += ".yaml"
                 else:
@@ -293,7 +293,6 @@ class TestsslInputFileMonitor(FileSystemEventHandler):
         super(TestsslInputFileMonitor, self).on_created(event)
 
         if not self.executor:
-            print(self.threads)
             self.executor = concurrent.futures.ThreadPoolExecutor(max_workers=self.threads)
 
         if event.is_directory:

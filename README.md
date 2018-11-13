@@ -117,24 +117,24 @@ mkdir output
   --output-dir-httpserver-port 8888
 ```
 
-Given a `testssl_cmds` file with contents below dropped into directory `input/`
+Given a `testssl_cmds` file (see `sample/` dir) dropped into directory `input/`.
 
 ```
-testssl.sh -S -P -p --fast --logfile google.com.log --jsonfile-pretty google.com.json --csvfile google.com.csv --htmlfile google.com.html https://google.com
+cp sample/www.google.com-testssl_cmds input/
 ```
 
 Now the `testssl_processor.py` output shows:
 
 ```
-2018-11-09 05:06:07,174 - root - INFO - Monitoring for new testssl_cmds files at: ./input with filename filter: testssl_cmds
-2018-11-09 05:06:07,175 - root - INFO - Starting HTTP server listening on: 8888 and serving up: ./output
-2018-11-09 05:06:39,403 - root - INFO - Responding to creation of file: ./input/testssl_cmds
-2018-11-09 05:06:44,408 - root - INFO - Processing testssl_cmds: './input/testssl_cmds'
-2018-11-09 05:06:44,431 - root - INFO - Processing testssl_cmd: 'testssl.sh -S -P -p --fast --logfile google.com.log --jsonfile-pretty google.com.json --csvfile google.com.csv --htmlfile google.com.html https://google.com'
-2018-11-09 05:07:40,826 - root - DEBUG - Command finished: exit code: 0 stdout.len:9014 stderr.len:0 cmd: /private/tmp/junk/testssl.sh-processor/testssl.sh/testssl.sh -S -P -p --fast --logfile google.com.log --jsonfile-pretty google.com.json --csvfile google.com.csv --htmlfile google.com.html https://google.com
-json
-2018-11-09 05:07:40,830 - root - DEBUG - Event 20181109_050644 Testssl processor result written to: ./output/testssl_processor_output_20181109_050644/testssl_processor_result_20181109_050644.json
-2018-11-09 05:07:40,924 - root - DEBUG - Pool closed and terminated
+2018-11-13 19:49:10,022 - root - INFO - Monitoring for new testssl_cmds files at: ./input with filename filter: testssl_cmds
+2018-11-13 19:49:10,023 - root - INFO - Starting HTTP server listening on: 8888 and serving up: ./output
+2018-11-13 19:49:12,311 - root - INFO - Responding to creation of file: ./input/www.google.com-testssl_cmds
+2018-11-13 19:49:17,317 - root - INFO - Processing testssl_cmds: './input/www.google.com-testssl_cmds'
+2018-11-13 19:49:17,340 - root - INFO - Processing testssl_cmd: 'testssl.sh -S -P -p --fast --logfile www.google.com/20181108120000/public/search/20181108120000_testssl_www.google.com.log --jsonfile-pretty www.google.com/20181108120000/public/search/20181108120000_testssl_www.google.com.json --csvfile www.google.com/20181108120000/public/search/20181108120000_testssl_www.google.com.csv --htmlfile www.google.com/20181108120000/public/search/20181108120000_testssl_www.google.com.html https://www.google.com'
+making dir: ./output/20181113_194917-www.google.com-testssl_cmds/www.google.com/20181108120000/public/search
+2018-11-13 19:50:03,392 - root - DEBUG - Command finished: exit code: 0 stdout.len:5752 stderr.len:0 cmd: /Users/inter0p/Documents/omg/code/github.com/bitsofinfo/testssl.sh-processor/testssl.sh/testssl.sh -S -P -p --fast --logfile www.google.com/20181108120000/public/search/20181108120000_testssl_www.google.com.log --jsonfile-pretty www.google.com/20181108120000/public/search/20181108120000_testssl_www.google.com.json --csvfile www.google.com/20181108120000/public/search/20181108120000_testssl_www.google.com.csv --htmlfile www.google.com/20181108120000/public/search/20181108120000_testssl_www.google.com.html https://www.google.com
+2018-11-13 19:50:03,394 - root - DEBUG - Event 20181113_194917 Testssl processor result written to: ./output/20181113_194917-www.google.com-testssl_cmds/testssl_processor_result_20181113_194917.json
+2018-11-13 19:50:03,495 - root - DEBUG - Pool closed and terminated
 ```
 
 The contents of our `input/` and `output/` dirs is now as follows.
@@ -148,15 +148,15 @@ Contents of `testssl_processor_result_*.json`:
 [
     {
         "success": true,
-        "orig_cmd": "testssl.sh -S -P -p --fast --logfile google.com.log --jsonfile-pretty google.com.json --csvfile google.com.csv --htmlfile google.com.html https://google.com",
-        "timestamp": "20181109_050644",
+        "orig_cmd": "testssl.sh -S -P -p --fast --logfile www.google.com/20181108120000/public/search/20181108120000_testssl_www.google.com.log --jsonfile-pretty www.google.com/20181108120000/public/search/20181108120000_testssl_www.google.com.json --csvfile www.google.com/20181108120000/public/search/20181108120000_testssl_www.google.com.csv --htmlfile www.google.com/20181108120000/public/search/20181108120000_testssl_www.google.com.html https://www.google.com",
+        "timestamp": "20181113_194917",
         "testssl_path_if_missing": "./testssl.sh",
-        "actual_cmd": "/private/tmp/junk/testssl.sh-processor/testssl.sh/testssl.sh -S -P -p --fast --logfile google.com.log --jsonfile-pretty google.com.json --csvfile google.com.csv --htmlfile google.com.html https://google.com",
-        "cwd": "./output/testssl_processor_output_20181109_050644",
+        "actual_cmd": "/home/bitsofinfo/testssl.sh-processor/testssl.sh/testssl.sh -S -P -p --fast --logfile www.google.com/20181108120000/public/search/20181108120000_testssl_www.google.com.log --jsonfile-pretty www.google.com/20181108120000/public/search/20181108120000_testssl_www.google.com.json --csvfile www.google.com/20181108120000/public/search/20181108120000_testssl_www.google.com.csv --htmlfile www.google.com/20181108120000/public/search/20181108120000_testssl_www.google.com.html https://www.google.com",
+        "cwd": "./output/20181113_194917-www.google.com-testssl_cmds",
         "returncode": 0,
-        "stdout": "\u001b[1m\n###########################################################\n    testssl.sh       3.0rc2 from \u001b[m\u001b[1mhttps://testssl.sh/dev/\u001b[m\n\u001b[1m    (\u001b[m\u001b[1;30mafe1419 2018-11-08 22:00:47 -- \u001b[m\u001b[1m)\u001b[m\n\u001b[1m\n      ...........",
+        "stdout": "\u001b[1m\n###########################################################\n    testssl.sh       3.0rc2 from \u001b[m\u001b[1mhttps://testssl.sh/dev/.................. ... .. . .172.217.6.68:443 (www.google.com) <<--\u001b[m\n\n\n",
         "stderr": "",
-        "exec_ms": 56395.165
+        "exec_ms": 46051.146
     }
 ]
 ```
@@ -167,7 +167,7 @@ Hitting http://localhost:8888 in a browser:
 
 ## Related
 
-* If you would like to send alerts based on the results of the `testssl.sh` JSON result file output produced by this, take a look at [testssl.sh-alerts](https://github.com/bitsofinfo/testssl.sh-alerts) at https://github.com/bitsofinfo/testssl.sh-alerts
+* If you would like to react and send alerts or copy files around based on the results of the `testssl.sh` JSON result file output produced by this, take a look at [testssl.sh-alerts](https://github.com/bitsofinfo/testssl.sh-alerts) at https://github.com/bitsofinfo/testssl.sh-alerts
 
 * This tool was originally developed to consume `testssl.sh` command files generated as part of the [swarm-traefik-state-analyzer](https://github.com/bitsofinfo/swarm-traefik-state-analyzer/blob/master/docs/tlsssltools.md) project's [testsslcmdsgeneratory.py](https://github.com/bitsofinfo/swarm-traefik-state-analyzer/blob/master/docs/tlsssltools.md) script as part of a larger pipeline of scripts that continously monitors the state of applications deployed on Docker Swarm clusters.
 
