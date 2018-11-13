@@ -20,6 +20,7 @@ import datetime
 import logging
 import subprocess
 import time
+from pathlib import Path
 
 import threading
 from watchdog.observers import Observer
@@ -187,6 +188,10 @@ class TestsslProcessor(object):
                         logging.debug("Removing old directory: " +toeval)
                         shutil.rmtree(toeval)
 
+        # lets just verify its actually there
+        if not Path(testssl_cmds_file_path).is_file():
+            logging.error("processCmdsFile() file does not exist! " + testssl_cmds_file_path)
+            return
 
         # open the file
         testssl_cmds = []
